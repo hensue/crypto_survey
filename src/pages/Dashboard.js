@@ -1,83 +1,78 @@
-import React from "react";
+import axios from "axios";
+import { useEffect, useState } from "react";
+import TopButton from "../components/Common/BackToTop/topButton";
+import Footer from "../components/Common/Footer/footer";
+import Header from "../components/Common/Header";
+import Loader from "../components/Common/Loader/loader";
+import PaginationComponent from "../components/Dashboard/Pagination/pagination";
+import SearchComponent from "../components/Dashboard/Search/search";
+import TabsComponent from "../components/Dashboard/Tabs/tabs";
+import { get100Coins } from "../functions/get100Coins";
 
-import InfoCard from "../components/Cards/InfoCard";
-import ChartCard from "../components/Chart/ChartCard";
-import { Doughnut, Line } from "react-chartjs-2";
-import ChartLegend from "../components/Chart/ChartLegend";
-import PageTitle from "../components/Typography/PageTitle";
-import { ChatIcon, CartIcon, MoneyIcon, PeopleIcon } from "../icons";
-import RoundIcon from "../components/RoundIcon";
+function DashboardPage() {
+  const [loading, setLoading] = useState(false);
+  const [coins, setCoins] = useState([]);
+  const [search, setSearch] = useState("");
+  const [pageNumber, setPageNumber] = useState(1);
+  const [paginatedCoins, setPaginatedCoins] = useState([]);
 
-import {
-  doughnutOptions,
-  lineOptions,
-  doughnutLegends,
-  lineLegends,
-} from "../utils/demo/chartsData";
-import OrdersTable from "../components/OrdersTable";
+  const handlePageChange = (event, value) => {
+    setPageNumber(value);
+    var startingIndex = (value - 1) * 10;
+    setPaginatedCoins(coins.slice(startingIndex, startingIndex + 10));
+  };
 
-function Dashboard() {
+  const onChange = (e) => {
+    setSearch(e.target.value);
+  };
+
+  var filteredCoins = coins.filter((coin) => {
+    if (
+      coin.name.toLowerCase().includes(search.toLowerCase()) ||
+      coin.symbol.toLowerCase().includes(search.toLowerCase())
+    ) {
+      return coin;
+    }
+  });
+
+  useEffect(() => {
+    getData();
+  }, []);
+
+  const getData = async () => {
+    setLoading(true);
+    const data = await get100Coins();
+    if (data) {
+      setCoins(data);
+      setPaginatedCoins(data.slice(0, 10));
+      setLoading(false);
+    }
+  };
+
   return (
     <>
-      <PageTitle>Dashboard</PageTitle>
-
-      {/* <CTA /> */}
-
-      {/* <!-- Cards --> */}
-      <div className="grid gap-6 mb-8 md:grid-cols-2 xl:grid-cols-4">
-        <InfoCard title="Total customers" value="765">
-          <RoundIcon
-            icon={PeopleIcon}
-            iconColorClass="text-orange-500 dark:text-orange-100"
-            bgColorClass="bg-orange-100 dark:bg-orange-500"
-            className="mr-4"
+      <TopButton />
+      {loading ? (
+        <Loader />
+      ) : (
+        <div style={{ minHeight: "90vh" }}>
+          <Header />
+          <SearchComponent search={search} onChange={onChange} />
+          <TabsComponent
+            coins={search ? filteredCoins : paginatedCoins}
+            setSearch={setSearch}
           />
-        </InfoCard>
-
-        <InfoCard title="Total income" value="$ 6,760.89">
-          <RoundIcon
-            icon={MoneyIcon}
-            iconColorClass="text-green-500 dark:text-green-100"
-            bgColorClass="bg-green-100 dark:bg-green-500"
-            className="mr-4"
-          />
-        </InfoCard>
-
-        <InfoCard title="New Orders" value="150">
-          <RoundIcon
-            icon={CartIcon}
-            iconColorClass="text-blue-500 dark:text-blue-100"
-            bgColorClass="bg-blue-100 dark:bg-blue-500"
-            className="mr-4"
-          />
-        </InfoCard>
-
-        <InfoCard title="Unread Chats" value="15">
-          <RoundIcon
-            icon={ChatIcon}
-            iconColorClass="text-teal-500 dark:text-teal-100"
-            bgColorClass="bg-teal-100 dark:bg-teal-500"
-            className="mr-4"
-          />
-        </InfoCard>
-      </div>
-
-      <div className="grid gap-6 mb-8 md:grid-cols-2">
-        <ChartCard title="User Analytics">
-          <Line {...lineOptions} />
-          <ChartLegend legends={lineLegends} />
-        </ChartCard>
-
-        <ChartCard title="Revenue">
-          <Doughnut {...doughnutOptions} />
-          <ChartLegend legends={doughnutLegends} />
-        </ChartCard>
-      </div>
-
-      <PageTitle>Orders</PageTitle>
-      <OrdersTable resultsPerPage={10} />
+          {!search && (
+            <PaginationComponent
+              pageNumber={pageNumber}
+              handleChange={handlePageChange}
+            />
+          )}
+        </div>
+      )}
+      <Footer />
     </>
   );
 }
 
-export default Dashboard;
+export default DashboardPage;
